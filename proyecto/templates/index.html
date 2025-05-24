@@ -1,0 +1,165 @@
+<html>
+<head>
+    <title>.:: Modelo de Predicción ::.</title>
+
+    <!-- Highcharts -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/series-label.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+    <!-- Estilos CSS embebidos -->
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        h3 {
+            color: #1a73e8;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #155ac4;
+        }
+
+        table {
+            width: 300px;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .highcharts-figure {
+            margin-top: 40px;
+        }
+
+        #prediction-chart, #metrics-chart {
+            width: 100%;
+            height: 400px;
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <form action="/prediccion/" method="post">
+        {% csrf_token %}
+        <h3>Predicción de cáncer de mama usando árbol de decisión</h3>
+        <p>Este modelo clasifica los tumores como benignos (0) o malignos (1).</p>
+        <p>Nicolás Rivas Meneses</p>
+        <p>Cristian Rojas Asensio</p>
+        <button type="submit">Predecir</button>
+        <table>
+            <tr><th>Suma valores reales</th><td>{{ sum_real }}</td></tr>
+            <tr><th>Suma valores predichos</th><td>{{ sum_pred }}</td></tr>
+            <tr><th>F1-Score</th><td>{{ f1_score }}</td></tr>
+        </table>
+
+
+        <!-- Tabla de métricas -->
+        <table>
+            <tr><th>Métrica</th><th>Valor</th></tr>
+            <tr><td>Precisión</td><td>{{ precision }}</td></tr>
+            <tr><td>Recall</td><td>{{ recall }}</td></tr>
+            <tr><td>F1-Score</td><td>{{ f1_score }}</td></tr>
+        </table>
+    </form>
+
+    <!-- Primera gráfica: Valores reales vs predicción -->
+    <figure class="highcharts-figure">
+        <div id="prediction-chart"></div>
+    </figure>
+
+    <script type="text/javascript">
+        const testLength = {{ test|length }};
+        const categories = Array.from({ length: testLength }, (_, i) => i + 1);
+
+        Highcharts.chart('prediction-chart', {
+            title: { text: 'Valores reales VS Predicción' },
+            subtitle: { text: 'Datos origen: Tumores de mama (diagnóstico)' },
+            yAxis: {
+                title: { text: 'Diagnóstico' },
+                min: 0,
+                max: 1
+            },
+            xAxis: {
+                title: { text: 'Índice de muestra' },
+                categories: categories
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'middle'
+            },
+            series: [{
+                name: 'Valores reales',
+                data: {{ test|safe }}
+            }, {
+                name: 'Valores predicción',
+                data: {{ prediction|safe }}
+            }],
+            responsive: {
+                rules: [{
+                    condition: { maxWidth: 500 },
+                    chartOptions: {
+                        legend: {
+                            layout: 'horizontal',
+                            align: 'center',
+                            verticalAlign: 'bottom'
+                        }
+                    }
+                }]
+            }
+        });
+    </script>
+
+    <!-- Segunda gráfica: Métricas del modelo -->
+    <figure class="highcharts-figure">
+        <div id="metrics-chart"></div>
+    </figure>
+
+    <script type="text/javascript">
+        Highcharts.chart('metrics-chart', {
+            chart: { type: 'column' },
+            title: { text: 'Métricas del modelo de Árbol de Decisión' },
+            xAxis: {
+                categories: ['Precisión', 'Recall', 'F1-Score']
+            },
+            yAxis: {
+                min: 0,
+                max: 1,
+                title: { text: 'Valor' }
+            },
+            series: [{
+                name: 'Árbol de Decisión',
+                data: {{ metrics|safe }}
+            }]
+        });
+    </script>
+</body>
+</html>
